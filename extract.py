@@ -3,6 +3,7 @@ import csv
 import os
 import pandas as pd
 import pathlib
+import ast
 
 '''
 TO create dir:
@@ -20,13 +21,23 @@ for folder in data_split:
         annotation_dict = json.loads(f.read())
     assert isinstance(annotation_dict['images'], list)
     print(annotation_dict['images'].__len__(), annotation_dict['annotation'].__len__())
-    # print(json.dumps(annotation_dict['annotation'][0], indent=4))
-    # print(json.dumps(annotation_dict['images'][0], indent=4))
-    annote = pd.read_csv(f'{folder}_annote.csv')
-    img = pd.read_csv(f'{folder}.csv')
-    print(annote.head(3), img.head(3), sep='\n')
-    df = pd.merge(annote, img, left_on='image_id', right_on='id')
-    df.to_csv(f'{folder}_merged.csv', index=False)
+    # for file in os.listdir(extracted_dir / folder):
+    #     with open(extracted_dir / folder / file, 'w+') as f:
+    #         lines = f.readlines()
+    #         lines = '\n'.join([line.strip() for line in lines])
+    #         f.write(lines)
+
+    df = pd.read_csv(f'{folder}_merged.csv')
+    df = df.loc[df['category_id'] == 0]
+    df['bbox'] = df['bbox'].map(ast.literal_eval).map(lambda x: " ".join(map(str, x)))
+    print(df.head())
+    assert df['image_id'].nunique() == df['filename'].nunique(), "FILENAME AND IMAGE ID DONT MATCH"
+    for id, file in zip(df['image_id'].unique(), df['filename'].unique()):
+        file = file.replace('jpg', 'txt')
+        path = extracted_dir / folder / file
+        with open(path, 'w') as f:
+            s = df.loc[df['image_id'] == id, 'bbox'].map(lambda x: x.strip()).to_string(f, index=False, header=False)
+
     # pd.DataFrame(annotation_dict['images']).to_csv(f'{folder}.csv', index=False)
     # pd.DataFrame(annotation_dict['annotation']).to_csv(f'{folder}_annote.csv', index=False)
     # with open(extracted_dir / folder / fname, 'w') as f:
