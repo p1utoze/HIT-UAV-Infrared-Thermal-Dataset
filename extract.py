@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import pathlib
 import ast
-
+import subprocess
 '''
 TO create dir:
 paste this in terminal:
@@ -21,11 +21,6 @@ for folder in data_split:
         annotation_dict = json.loads(f.read())
     assert isinstance(annotation_dict['images'], list)
     print(annotation_dict['images'].__len__(), annotation_dict['annotation'].__len__())
-    # for file in os.listdir(extracted_dir / folder):
-    #     with open(extracted_dir / folder / file, 'w+') as f:
-    #         lines = f.readlines()
-    #         lines = '\n'.join([line.strip() for line in lines])
-    #         f.write(lines)
 
     df = pd.read_csv(f'{folder}_merged.csv')
     df = df.loc[df['category_id'] == 0]
@@ -33,8 +28,10 @@ for folder in data_split:
     print(df.head())
     assert df['image_id'].nunique() == df['filename'].nunique(), "FILENAME AND IMAGE ID DONT MATCH"
     for id, file in zip(df['image_id'].unique(), df['filename'].unique()):
+        cmd = f'cp {target_dir / folder / file} {extracted_dir / folder / file}'
         file = file.replace('jpg', 'txt')
-        path = extracted_dir / folder / file
+        path = extracted_dir / folder / 'annotations' / file
+        # os.system(cmd)
         with open(path, 'w') as f:
             s = df.loc[df['image_id'] == id, 'bbox'].map(lambda x: x.strip()).to_string(f, index=False, header=False)
 
